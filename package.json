@@ -1,0 +1,17 @@
+{
+  "name": "nodejs-read-csv-files-and-process-per-line-by-batch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@fast-csv/parse": "4.3.0",
+    "fast-csv": "4.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "1.18.4"
+  },
+  "keywords": []
+}
