@@ -1,5 +1,6 @@
 var parseStream = require("fast-csv").parseStream;
 var fs = require("fs");
+const path = require("path");
 
 var http = require("http");
 
@@ -25,13 +26,13 @@ async function logic(req, res) {
       data => {
         return _simulateAsyncProcess(data);
       },
-      { returnResult: true, batchCount: 1 }
+      { returnResult: true, batchCount: 50 }
     );
     res.write(JSON.stringify(result, null, 1));
   } catch (err) {
     // res.status(500);
     console.error(err);
-    res.write("error");
+    res.write(err);
   }
 }
 
@@ -47,13 +48,20 @@ async function parseCsvAndProcessByBatch(
     throw new Error(`function is required on 2nd argument`);
   }
   // loop through the stream & stop when totalFieldCount is 0.
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       let batchProcessContainer = [];
       let rowCount = 0;
       let batchResults = [];
 
-      const stream = fs.createReadStream(`${location}/${filename}`);
+      // add is file exists validator here...
+      const file_path = path.join(location, filename);
+      const isFileExists = await _isFileExists(file_path);
+      if (!isFileExists) {
+        return reject(`File ${location}/${filename} does not exists`);
+      }
+
+      const stream = fs.createReadStream(`${file_path}`);
 
       parseStream(stream, { headers: true })
         .transform(async (data, callback) => {
@@ -91,6 +99,7 @@ async function parseCsvAndProcessByBatch(
           return callback(null, data);
         })
         .on("error", error => {
+          console.log("i have error!");
           console.log("error", error);
           return reject(error);
         })
@@ -120,7 +129,7 @@ async function parseCsvAndProcessByBatch(
           });
         });
     } catch (err) {
-      return reject(err);
+      // return reject(err);
     }
   });
 }
@@ -131,5 +140,19 @@ async function parseCsvAndProcessByBatch(
 async function _simulateAsyncProcess(data, delay = 100) {
   return new Promise(resolve => {
     setTimeout(() => resolve({ ...data, timestamp: Date.now() }), delay);
+  });
+}
+
+/**
+ *
+ */
+async function _isFileExists(file_location) {
+  return new Promise((resolve, reject) => {
+    fs.access(file_location, fs.F_OK, err => {
+      if (err) {
+        return resolve(false);
+      }
+      return resolve(true);
+    });
   });
 }
